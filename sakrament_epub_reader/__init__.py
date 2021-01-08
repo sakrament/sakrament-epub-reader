@@ -5,6 +5,33 @@ import html2text
 import ebooklib
 import ebooklib.epub
 import shutil
+import subprocess
+import os
+
+
+data_path = pathlib.Path(__file__).resolve().parent / 'data'
+tts_engine_path = data_path / 'bin' / 'mac' / 'tts_engine'
+
+
+def run_tts_eingine(text):
+    """Converts text to PCM audio data"""
+    # todo: lang
+
+    input_bytes = text.encode(encoding='utf-8', errors='strict')
+    original_cwd = os.getcwd()
+
+    try:
+        os.chdir(tts_engine_path.parent)
+        completed_process = subprocess.run(
+            [str(tts_engine_path), '--lang', 'be', '--wav'],
+            input=input_bytes,
+            check=True,
+            stdout=subprocess.PIPE)
+    finally:
+        os.chdir(original_cwd)
+
+    return completed_process.stdout
+
 
 help = \
     """
@@ -72,5 +99,10 @@ def main(argv):
 
         with chapter_path.open('w') as f:
             f.write(clean_body)
+
+        text = clean_body.split()[0]
+        pcm = run_tts_eingine(text)
+
+        break
 
     logging.info('OK')
