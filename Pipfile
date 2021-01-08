@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 ebooklib = "*"
 docopt = "*"
+html2text = "*"
 
 [dev-packages]
 pytest = "*"
