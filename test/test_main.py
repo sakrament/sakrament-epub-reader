@@ -11,9 +11,8 @@ def get_books_path():
 
 
 def run_book_test(book_name):
-    book = get_books_path() / book_name
-    argv = [str(book)]  # program name is not used
-    sakrament_epub_reader.main(argv)
+    book_path = get_books_path() / book_name
+    sakrament_epub_reader.process(book_path)
 
 
 def test_kolas():

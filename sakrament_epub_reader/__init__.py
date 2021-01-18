@@ -52,24 +52,8 @@ def convert_pcm_to_mp3(pcm_file, mp3_file):
     subprocess.run(command, check=True)
 
 
-help = \
-    """
-    Sakrament EPUB reader
-    
-    Usage:
-        sakrament-epub-reader <input_epub_file>
-        sakrament-epub-reader (-h | --help) 
-    """
-
-def main(argv):
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s ' + logging.BASIC_FORMAT,
-        datefmt='[%H:%M:%S]')
-
-    args = docopt.docopt(help, argv=argv)
-
-    input_epub_file = pathlib.Path(args['<input_epub_file>']).resolve()
+def process(input_epub_file):
+    input_epub_file = pathlib.Path(input_epub_file).resolve()
     output_dir = input_epub_file.parent / input_epub_file.stem
 
     logging.info('Program started')
@@ -140,3 +124,24 @@ def main(argv):
         chapter_path_pcm.unlink()
 
     logging.info('OK')
+
+
+help = \
+    """
+    Sakrament EPUB reader
+    
+    Usage:
+        sakrament-epub-reader <input_epub_file>
+        sakrament-epub-reader (-h | --help) 
+    """
+
+def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s ' + logging.BASIC_FORMAT,
+        datefmt='[%H:%M:%S]')
+
+    args = docopt.docopt(help)
+    input_epub_file  = args['<input_epub_file>']
+
+    process(input_epub_file)
