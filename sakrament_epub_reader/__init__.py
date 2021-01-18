@@ -9,14 +9,22 @@ import subprocess
 import time
 import os
 import concurrent.futures
+import platform
+
 
 debug = False
 
+
 data_path = pathlib.Path(__file__).resolve().parent / 'data'
-tts_engine_path = data_path / 'bin' / 'mac' / 'tts_engine'
+if platform.system() == 'Darwin':
+    tts_engine_path = data_path / 'bin' / 'mac' / 'tts_engine'
+    ffmpeg_path = 'ffmpeg'
+elif platform.system() == 'Windows':
+    tts_engine_path = data_path / 'bin' / 'win32' / 'tts_engine' / 'tts_engine.exe'
+    ffmpeg_path = data_path / 'bin' / 'win32' / 'ffmpeg' / 'bin' / 'ffmpeg.exe'
 
 
-def run_tts_engine(text, output_pcm_file):
+def run_tts_engine(text, output_wav_file):
     """Converts text to PCM audio data via calling tts_engine"""
     # todo: lang
 
@@ -24,30 +32,27 @@ def run_tts_engine(text, output_pcm_file):
     original_cwd = os.getcwd()
 
     try:
-        with output_pcm_file.open('w') as f:
-            os.chdir(tts_engine_path.parent)
-            completed_process = subprocess.run(
-                [str(tts_engine_path), '--lang', 'be', '--wav'],
-                input=input_bytes,
-                check=True,
-                stdout=f)
+        os.chdir(tts_engine_path.parent)
+        completed_process = subprocess.run(
+            [str(tts_engine_path), '--lang', 'be', '--wav', str(output_wav_file)],
+            input=input_bytes,
+            check=True,
+            text=False)
     finally:
         os.chdir(original_cwd)
 
-    return completed_process.stdout
 
-
-def convert_pcm_to_mp3(pcm_file, mp3_file):
+def convert_pcm_to_mp3(wav_file, mp3_file):
     """Convert PCM data into MP3 data format by passing it through ffmpeg"""
 
     command = [
-        'ffmpeg',
+        str(ffmpeg_path),
         '-hide_banner',
         '-loglevel', 'warning',
         '-f', 's16le',
         '-ar', '48000',
         '-ac', '1',
-        '-i', str(pcm_file),
+        '-i', str(wav_file),
         str(mp3_file)
     ]
 
@@ -72,27 +77,27 @@ def process_book_item(output_dir, id, idx, item):
 
     chapter_path = output_dir / f'{formatted_idx}_{pathlib.Path(id).stem}'
     chapter_path_txt = chapter_path.with_suffix('.txt')
-    chapter_path_pcm = chapter_path.with_suffix('.pcm')
+    chapter_path_wav = chapter_path.with_suffix('.wav')
     chapter_path_mp3 = chapter_path.with_suffix('.mp3')
 
     # only for debugging epub parsing
-    with chapter_path_txt.open('w') as f:
+    with chapter_path_txt.open('w', encoding='utf-8') as f:
         f.write(clean_body)
 
     text = clean_body[0:1024] if debug else clean_body
 
     logging.info('%s: TTS start', formatted_idx)
     tts_start_time = time.time()
-    run_tts_engine(text, chapter_path_pcm)
+    run_tts_engine(text, chapter_path_wav)
     logging.info('%s: TTS complete (%s)', formatted_idx, time.time() - tts_start_time)
 
-    logging.info('%s: MP3 conversion start', formatted_idx)
-    mp3_start_time = time.time()
-    convert_pcm_to_mp3(chapter_path_pcm, chapter_path_mp3)
-    logging.info('%s: MP3 conversion complete (%s)', formatted_idx, time.time() - mp3_start_time)
+    # logging.info('%s: MP3 conversion start', formatted_idx)
+    # mp3_start_time = time.time()
+    # convert_pcm_to_mp3(chapter_path_wav, chapter_path_mp3)
+    # logging.info('%s: MP3 conversion complete (%s)', formatted_idx, time.time() - mp3_start_time)
 
-    chapter_path_txt.unlink()
-    chapter_path_pcm.unlink()
+    # chapter_path_txt.unlink()
+    # chapter_path_wav.unlink()
 
 
 def process_book(input_epub_file):
