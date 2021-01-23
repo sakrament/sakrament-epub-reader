@@ -13,9 +13,4 @@ setuptools.setup(
     url="https://github.com/sakrament/sakrament-epub-reader",
     packages=setuptools.find_packages(),
     python_requires='>=3.8',
-    entry_points={
-        "console_scripts": [
-            "sakrament_epub_reader = sakrament_epub_reader.__init__:main",
-        ]
-    }
 )
