@@ -6,8 +6,8 @@ rm *.spec
 pyinstaller ^
   --clean ^
   --noconfirm ^
-  --onefile ^
+  --onedir ^
   --name sakrament_epub_reader ^
   --console ^
-  --add-data="sakrament_epub_reader\data;data" ^
+  --add-data="data;data" ^
   .\sakrament_epub_reader\__main__.py

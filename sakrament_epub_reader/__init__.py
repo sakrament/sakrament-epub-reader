@@ -12,10 +12,7 @@ import concurrent.futures
 import platform
 
 
-debug = False
-
-
-data_path = pathlib.Path(__file__).resolve().parent / 'data'
+data_path = pathlib.Path(__file__).resolve().parent.parent / 'data'
 if platform.system() == 'Darwin':
     tts_engine_path = data_path / 'bin' / 'mac' / 'tts_engine'
     ffmpeg_path = 'ffmpeg'
@@ -33,7 +30,7 @@ def run_tts_engine(text, output_wav_file):
 
     try:
         os.chdir(tts_engine_path.parent)
-        completed_process = subprocess.run(
+        subprocess.run(
             [str(tts_engine_path), '--lang', 'be', '--wav', str(output_wav_file)],
             input=input_bytes,
             check=True,
@@ -59,7 +56,7 @@ def convert_pcm_to_mp3(wav_file, mp3_file):
     subprocess.run(command, check=True)
 
 
-def process_book_item(output_dir, id, idx, item):
+def process_book_item(output_dir, id, idx, item, debug):
     formatted_idx = '{:03d}'.format(idx)
 
     logging.info("Processing book item: %s %s", formatted_idx, item.get_name())
@@ -84,7 +81,7 @@ def process_book_item(output_dir, id, idx, item):
     with chapter_path_txt.open('w', encoding='utf-8') as f:
         f.write(clean_body)
 
-    text = clean_body[0:1024] if debug else clean_body
+    text = clean_body[0:512] if debug else clean_body
 
     logging.info('%s: TTS start', formatted_idx)
     tts_start_time = time.time()
@@ -100,7 +97,7 @@ def process_book_item(output_dir, id, idx, item):
     # chapter_path_wav.unlink()
 
 
-def process_book(input_epub_file):
+def process_book(input_epub_file, debug):
     input_epub_file = pathlib.Path(input_epub_file).resolve()
     output_dir = input_epub_file.parent / input_epub_file.stem
 
@@ -132,7 +129,7 @@ def process_book(input_epub_file):
             if item.get_type() != ebooklib.ITEM_DOCUMENT:
                 continue
 
-            feature = executor.submit(process_book_item, output_dir, id, idx, item)
+            feature = executor.submit(process_book_item, output_dir, id, idx, item, debug)
             features.append(feature)
 
         # we explicitly wait for all the features
@@ -147,8 +144,12 @@ help = \
     Sakrament EPUB reader
     
     Usage:
-        sakrament-epub-reader <input_epub_file>
+        sakrament-epub-reader [-d | --debug] <input_epub_file>
         sakrament-epub-reader (-h | --help) 
+    
+    Options:
+        -h --help     Show this screen.
+        -d --debug    Process only a few characters from each chapter. Making the program exit faster.   
     """
 
 def main():
@@ -159,12 +160,16 @@ def main():
 
     args = docopt.docopt(help)
     input_epub_file = args['<input_epub_file>']
+    debug = args['--debug']
 
     logging.info('Program started')
+    logging.info(f'__file__: {str(pathlib.Path(__file__))}')
+    logging.info(f'debug mode: {debug}')
     logging.info(f'data_path: {data_path}')
+    logging.info(f'Data path: {data_path}')
     logging.info(f'tts_engine_path: {tts_engine_path}')
     logging.info(f'ffmpeg_path: {ffmpeg_path}')
 
-    process_book(input_epub_file)
+    process_book(input_epub_file, debug)
 
     logging.info('OK')
