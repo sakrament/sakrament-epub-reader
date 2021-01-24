@@ -11,5 +11,6 @@ pyinstaller \
   --onefile \
   --name sakrament_epub_reader \
   --console \
-  --add-data="data:data" \
+  --add-data="data/bin/mac:data/bin/mac" \
+  --add-data="data/db:data/db" \
   ./sakrament_epub_reader/__main__.py
