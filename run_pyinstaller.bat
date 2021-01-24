@@ -6,7 +6,7 @@ rm *.spec
 pyinstaller ^
   --clean ^
   --noconfirm ^
-  --onedir ^
+  --onefile ^
   --name sakrament_epub_reader ^
   --console ^
   --add-data="data;data" ^
