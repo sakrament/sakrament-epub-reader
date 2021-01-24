@@ -8,7 +8,7 @@ rm -rf build dist *.spec
 pyinstaller \
   --clean \
   --noconfirm \
-  --onedir \
+  --onefile \
   --name sakrament_epub_reader \
   --console \
   --add-data="sakrament_epub_reader/data:data" \
