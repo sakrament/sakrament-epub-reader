@@ -104,7 +104,6 @@ def process_book(input_epub_file):
     input_epub_file = pathlib.Path(input_epub_file).resolve()
     output_dir = input_epub_file.parent / input_epub_file.stem
 
-    logging.info('Program started')
     logging.info('Input epub file: %s', input_epub_file)
     logging.info('Output directory: %s', output_dir)
 
@@ -125,6 +124,7 @@ def process_book(input_epub_file):
     logging.info("Metadata language: %s", book.get_metadata('DC', 'language'))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        features = []
         for idx, spine in enumerate(book.spine):
             id = spine[0]
 
@@ -132,9 +132,14 @@ def process_book(input_epub_file):
             if item.get_type() != ebooklib.ITEM_DOCUMENT:
                 continue
 
-            executor.submit(process_book_item, output_dir, id, idx, item)
+            feature = executor.submit(process_book_item, output_dir, id, idx, item)
+            features.append(feature)
 
-    logging.info('OK')
+        # we explicitly wait for all the features
+        # because we want to have a proper exception handling
+        concurrent.futures.wait(features, return_when=concurrent.futures.FIRST_EXCEPTION)
+        for f in features:
+            f.result()
 
 
 help = \
@@ -153,6 +158,13 @@ def main():
         datefmt='[%H:%M:%S]')
 
     args = docopt.docopt(help)
-    input_epub_file  = args['<input_epub_file>']
+    input_epub_file = args['<input_epub_file>']
+
+    logging.info('Program started')
+    logging.info(f'data_path: {data_path}')
+    logging.info(f'tts_engine_path: {tts_engine_path}')
+    logging.info(f'ffmpeg_path: {ffmpeg_path}')
 
     process_book(input_epub_file)
+
+    logging.info('OK')
