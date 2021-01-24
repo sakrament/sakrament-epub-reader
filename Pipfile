@@ -12,6 +12,3 @@ pyinstaller = "*"
 [dev-packages]
 pytest = "*"
 sakrament-epub-reader = {editable = true, path = "."}
-
-[requires]
-python_version = "3.9"
