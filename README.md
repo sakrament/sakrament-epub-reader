@@ -2,6 +2,8 @@
 
 A tool for converting textual epub books to a set of mp3 files via Sakrament's TTS engine.
 
+The project was made for ["Belarusian society of the visually impaired"](https://beltiz.by/) to help visually impaired people read (listen to) Belarusian texts.
+
 ## Make Windows distribution
 
 * Use Windows 7 SP 1 (32 bit)
