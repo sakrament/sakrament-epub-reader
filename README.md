@@ -18,3 +18,9 @@ run_pyinstaller.bat
 ```
 
 Then you could find the `sakrament_epub_reader.exe` file in `dist` directory.
+
+## Other
+
+For mp3 encoding we use [LAME](https://lame.sourceforge.io/) encoder. 
+Binaries for Windwos are taken [here](https://www.rarewares.org/mp3-lame-bundle.php#lame-current-sbd).
+Version is `LAME 3.100.1` (win32 bundle).

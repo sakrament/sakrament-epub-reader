@@ -15,10 +15,10 @@ import platform
 data_path = pathlib.Path(__file__).resolve().parent.parent / 'data'
 if platform.system() == 'Darwin':
     tts_engine_path = data_path / 'bin' / 'mac' / 'tts_engine'
-    ffmpeg_path = 'ffmpeg'
+    lame_path = 'lame'
 elif platform.system() == 'Windows':
     tts_engine_path = data_path / 'bin' / 'win32' / 'tts_engine' / 'tts_engine.exe'
-    ffmpeg_path = data_path / 'bin' / 'win32' / 'ffmpeg' / 'bin' / 'ffmpeg.exe'
+    lame_path = data_path / 'bin' / 'win32' / 'lame' / 'lame.exe'
 
 
 def run_tts_engine(text, output_wav_file):
@@ -39,24 +39,15 @@ def run_tts_engine(text, output_wav_file):
         os.chdir(original_cwd)
 
 
-def convert_pcm_to_mp3(wav_file, mp3_file):
-    """Convert PCM data into MP3 data format by passing it through ffmpeg"""
-
-    command = [
-        str(ffmpeg_path),
-        '-hide_banner',
-        '-loglevel', 'warning',
-        '-f', 's16le',
-        '-ar', '48000',
-        '-ac', '1',
-        '-i', str(wav_file),
-        str(mp3_file)
-    ]
-
+def convert_pcm_to_mp3(wav_file, mp3_file, hq):
+    """Convert PCM data into MP3 data format by passing it through lame"""
+    command = [str(lame_path), '--silent']
+    command += ['--resample', '22050'] if not hq else []
+    command += [str(wav_file), str(mp3_file)]
     subprocess.run(command, check=True)
 
 
-def process_book_item(output_dir, id, idx, item, debug):
+def process_book_item(output_dir, id, idx, item, hq, debug):
     formatted_idx = '{:03d}'.format(idx)
 
     logging.info("Processing book item: %s %s", formatted_idx, item.get_name())
@@ -88,16 +79,17 @@ def process_book_item(output_dir, id, idx, item, debug):
     run_tts_engine(text, chapter_path_wav)
     logging.info('%s: TTS complete (%s)', formatted_idx, time.time() - tts_start_time)
 
-    # logging.info('%s: MP3 conversion start', formatted_idx)
-    # mp3_start_time = time.time()
-    # convert_pcm_to_mp3(chapter_path_wav, chapter_path_mp3)
-    # logging.info('%s: MP3 conversion complete (%s)', formatted_idx, time.time() - mp3_start_time)
+    logging.info('%s: MP3 conversion start', formatted_idx)
+    mp3_start_time = time.time()
+    convert_pcm_to_mp3(chapter_path_wav, chapter_path_mp3, hq)
+    logging.info('%s: MP3 conversion complete (%s)', formatted_idx, time.time() - mp3_start_time)
 
-    # chapter_path_txt.unlink()
-    # chapter_path_wav.unlink()
+    if not debug:
+        chapter_path_txt.unlink()
+        chapter_path_wav.unlink()
 
 
-def process_book(input_epub_file, debug):
+def process_book(input_epub_file, hq, debug):
     input_epub_file = pathlib.Path(input_epub_file).resolve()
     output_dir = input_epub_file.parent / input_epub_file.stem
 
@@ -129,7 +121,7 @@ def process_book(input_epub_file, debug):
             if item.get_type() != ebooklib.ITEM_DOCUMENT:
                 continue
 
-            feature = executor.submit(process_book_item, output_dir, id, idx, item, debug)
+            feature = executor.submit(process_book_item, output_dir, id, idx, item, hq, debug)
             features.append(feature)
 
         # we explicitly wait for all the features
@@ -144,12 +136,13 @@ help = \
     Sakrament EPUB reader
     
     Usage:
-        sakrament-epub-reader [-d | --debug] <input_epub_file>
+        sakrament-epub-reader [--debug] [--hq] <input_epub_file>
         sakrament-epub-reader (-h | --help) 
     
     Options:
-        -h --help     Show this screen.
-        -d --debug    Process only a few characters from each chapter. Making the program exit faster.   
+        -h, --help  Show this screen. 
+        --hq        Do not resample output audio to make output mp3 files smaller (44100 Hz is the HQ sample rate, 22050 kHz is the minimized one (default)) 
+        --debug     Process only a few characters from each chapter. Making the program exit faster.   
     """
 
 def main():
@@ -161,15 +154,15 @@ def main():
     args = docopt.docopt(help)
     input_epub_file = args['<input_epub_file>']
     debug = args['--debug']
+    hq = args['--hq']
 
     logging.info('Program started')
-    logging.info(f'__file__: {str(pathlib.Path(__file__))}')
     logging.info(f'debug mode: {debug}')
     logging.info(f'data_path: {data_path}')
     logging.info(f'Data path: {data_path}')
     logging.info(f'tts_engine_path: {tts_engine_path}')
-    logging.info(f'ffmpeg_path: {ffmpeg_path}')
+    logging.info(f'lame_path: {lame_path}')
 
-    process_book(input_epub_file, debug)
+    process_book(input_epub_file, hq, debug)
 
     logging.info('OK')
