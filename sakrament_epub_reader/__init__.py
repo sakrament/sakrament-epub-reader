@@ -10,9 +10,10 @@ import time
 import os
 import concurrent.futures
 import platform
+import re
 
-import sakrament_epub_reader.num2t4be
-import sakrament_epub_reader.num2t4ru
+import sakrament_epub_reader.num2t4be as num2t4be
+import sakrament_epub_reader.num2t4ru as num2t4ru
 
 
 data_path = pathlib.Path(__file__).resolve().parent.parent / 'data'
@@ -50,6 +51,19 @@ def convert_pcm_to_mp3(wav_file, mp3_file, hq):
     subprocess.run(command, check=True)
 
 
+def clear_text(input_text):
+    regex = re.compile(r"[0-9]+")
+
+    def func(m):
+        number_as_digits = m.group()
+        number_as_int = int(number_as_digits)
+        number_as_text = num2t4be.num2text(number_as_int)
+        return number_as_text
+
+    output_text = re.sub(regex, func, input_text)
+    return output_text
+
+
 def process_book_item(output_dir, id, idx, item, hq, debug):
     formatted_idx = '{:03d}'.format(idx)
 
@@ -76,6 +90,7 @@ def process_book_item(output_dir, id, idx, item, hq, debug):
         f.write(clean_body)
 
     text = clean_body[0:512] if debug else clean_body
+    text = clear_text(text)
 
     logging.info('%s: TTS start', formatted_idx)
     tts_start_time = time.time()
