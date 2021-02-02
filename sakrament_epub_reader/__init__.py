@@ -11,6 +11,9 @@ import os
 import concurrent.futures
 import platform
 
+import sakrament_epub_reader.num2t4be
+import sakrament_epub_reader.num2t4ru
+
 
 data_path = pathlib.Path(__file__).resolve().parent.parent / 'data'
 if platform.system() == 'Darwin':
