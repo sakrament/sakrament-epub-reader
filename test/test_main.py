@@ -12,7 +12,7 @@ def get_books_path():
 
 def run_book_test(book_name):
     book_path = get_books_path() / book_name
-    sakrament_epub_reader.process_book(book_path)
+    sakrament_epub_reader.process_book(book_path, False, False)
 
 
 def test_kolas():
@@ -21,3 +21,7 @@ def test_kolas():
 
 def test_korotkevich():
     run_book_test('Korotkevich_Kalasy-pad-syarpom-tvaim.epub')
+
+
+def test_newspaper():
+    run_book_test('newspaper.epub')

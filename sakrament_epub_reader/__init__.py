@@ -10,10 +10,8 @@ import time
 import os
 import concurrent.futures
 import platform
-import re
 
-import sakrament_epub_reader.num2t4be as num2t4be
-import sakrament_epub_reader.num2t4ru as num2t4ru
+import sakrament_epub_reader.text
 
 
 data_path = pathlib.Path(__file__).resolve().parent.parent / 'data'
@@ -51,19 +49,6 @@ def convert_pcm_to_mp3(wav_file, mp3_file, hq):
     subprocess.run(command, check=True)
 
 
-def clear_text(input_text):
-    regex = re.compile(r"[0-9]+")
-
-    def func(m):
-        number_as_digits = m.group()
-        number_as_int = int(number_as_digits)
-        number_as_text = num2t4be.num2text(number_as_int)
-        return number_as_text
-
-    output_text = re.sub(regex, func, input_text)
-    return output_text
-
-
 def process_book_item(output_dir, id, idx, item, hq, debug):
     formatted_idx = '{:03d}'.format(idx)
 
@@ -81,20 +66,25 @@ def process_book_item(output_dir, id, idx, item, hq, debug):
     clean_body = h2t.handle(body)
 
     chapter_path = output_dir / f'{formatted_idx}_{pathlib.Path(id).stem}'
-    chapter_path_txt = chapter_path.with_suffix('.txt')
+    chapter_path_original_txt = chapter_path.with_name(f'{chapter_path.stem}_origin').with_suffix('.txt')
+    chapter_path_processed_txt = chapter_path.with_name(f'{chapter_path.stem}_processed').with_suffix('.txt')
     chapter_path_wav = chapter_path.with_suffix('.wav')
     chapter_path_mp3 = chapter_path.with_suffix('.mp3')
 
-    # only for debugging epub parsing
-    with chapter_path_txt.open('w', encoding='utf-8') as f:
-        f.write(clean_body)
+    text_original = clean_body[0:512] if debug else clean_body
+    text_processed = sakrament_epub_reader.text.process(text_original)
 
-    text = clean_body[0:512] if debug else clean_body
-    text = clear_text(text)
+    # only for debugging epub parsing
+    with chapter_path_original_txt.open('w', encoding='utf-8') as f:
+        f.write(text_original)
+
+    # only for debugging epub parsing
+    with chapter_path_processed_txt.open('w', encoding='utf-8') as f:
+        f.write(text_processed)
 
     logging.info('%s: TTS start', formatted_idx)
     tts_start_time = time.time()
-    run_tts_engine(text, chapter_path_wav)
+    run_tts_engine(text_processed, chapter_path_wav)
     logging.info('%s: TTS complete (%s)', formatted_idx, time.time() - tts_start_time)
 
     logging.info('%s: MP3 conversion start', formatted_idx)
@@ -103,7 +93,8 @@ def process_book_item(output_dir, id, idx, item, hq, debug):
     logging.info('%s: MP3 conversion complete (%s)', formatted_idx, time.time() - mp3_start_time)
 
     if not debug:
-        chapter_path_txt.unlink()
+        chapter_path_original_txt.unlink()
+        chapter_path_processed_txt.unlink()
         chapter_path_wav.unlink()
 
 
