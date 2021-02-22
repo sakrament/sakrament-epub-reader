@@ -21,11 +21,17 @@ def test_OneToIReplacementRegexProcessor():
     assert p.process("аб 1абв аб") == "аб іабв аб"
     assert p.process("аб абв1 аб") == "аб абві аб"
     assert p.process("аб 1а1б1в1 аб") == "аб іаібіві аб"
-    assert p.process("а11б") == "а11б"
-    assert p.process("11б") == "11б"
-    assert p.process("a11") == "a11"
-    assert p.process("аб 111 аб") == "аб 111 аб"
+    assert p.process("а11б") == "аііб"
+    assert p.process("11б") == "ііб"
+    assert p.process("a11") == "aіі"
 
+    assert p.process("аб 111 аб") == "аб ііі аб"
+    assert p.process("1ра п1л1т.1р1н1й") == "іра піліт.іріній"
+
+def test_CleanGrafSymbolProcessor():
+    p = CleanGrafSymbolProcessor()
+    assert p.process("Матушка ^^ Россия.Hjcc,-ура ") == "Матушка  Россия.,-ура "
+    assert p.process("Мілая Беларусь.^.іріна,-123") == "Мілая Беларусь..іріна,-123"
 
 def test_DigitsInTextRegexProcessor():
     p = DigitsInTextProcessor()
